@@ -1,6 +1,6 @@
 {
   "version": "0.0.6",
-  "appTitle": "Meeting Transfer Tool",
+  "appTitle": "Agent Desktop",
   "logo": "",
   "dragDropEnabled": true,
   "notificationTimer": 8,
@@ -105,7 +105,7 @@
               "children": [
                 {
                   "comp": "sa-ds-voice-sdk",
-                  "script": "https://tahanson.eu.ngrok.io/build/bundle.js",
+                  "script": "http://localhost:5000/build/bundle.js",
                   "wrapper": {
                     "title": "Meeting Transfer Tool",
                     "maximizeAreaName": "app-maximize-area"
