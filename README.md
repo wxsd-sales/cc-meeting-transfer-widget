@@ -8,7 +8,7 @@ Hosts a widget which will function inside of Contact Center Agent Desktop that a
 
 ## Developer Documentation
 
-**https://developer.webex-cx.com/documentation/guides/desktop**
+**https://developer.webex-cx.com/documentation/guides/desktop**  
 **https://developer.webex.com/docs/api/v1/call-controls**
 
 ## Getting Started
@@ -47,19 +47,24 @@ To understand how to interact with our Desktop Layout, please watch the video an
   - i. ```HOST_URI="http://localhost:5000"```
   - ii. ```HOST_URI="https://your.server.com"```
 
+### 3.a. Running the widget webserver as a container (Docker) (recommended)
 
-### 3a. Running the widget webserver
+- If you prefer to run this through ```npm```, skip this step and proceed to 3.b.
+- Otherwise, run the following commands from the terminal inside your project's root directory:
+- `docker build -t cc-meeting-transfer-widget .`
+- `docker run -p 5000:5000 -i -t cc-meeting-transfer-widget`
+  - replace `5000` in both places with the ```PORT``` used in your `.env` file.  
 
-- If you wish to run the webserver as a container (Docker), skip this step and proceed to 3b.
+### 3.b. Running the widget webserver (npm)
+_Node.js version >= 14.5 must be installed on the system in order to run this through npm._
+
+- It is recommended that you run this as a container (step 3.a.).
+- If you do not wish to run the webserver as a container (Docker), proceed with this step:
 - Inside this project on your terminal type: `npm install`
 - Then inside this project on your terminal type: `npm run build`
 - Then inside this project on your terminal type: `npm run dev`
 - This should run the app on your ```PORT``` (from .env file)
 
-### 3b. Running the widget webserver (Docker)
-
-- Only follow this step if you skipped step 3a.
-- 
 
 ### 4. Wire Up the Widget to the Layout:
 
