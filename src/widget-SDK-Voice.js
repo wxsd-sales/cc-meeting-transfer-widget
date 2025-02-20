@@ -464,6 +464,9 @@ class myDesktopSDK extends HTMLElement {
                   this.showAuthorizeDiv("Access denied. Please authorize again.");
                 } else {
                   let calls = await callsResponse.json();
+                  //TODO: Calls was showing as empty in C1 environment, so maybe I need to try again?
+                  //      His API call on the dev portal worked to show the call before the transfer, so I'm thinking it COULD be 
+                  //      gone for a second when the Blindxfer on CC happens?
                   customLog(calls);
                   for(let call of calls.items){
                     if(call.remoteParty.number.replace("+","") === remoteNumber){
@@ -483,7 +486,7 @@ class myDesktopSDK extends HTMLElement {
                     headers: headers, 
                     body: JSON.stringify({
                                           callId: matchedId,
-                                          destination: 'rtaylorhansoncoe@coe-sbx.webex.com'
+                                          destination: sipAddress
                                         })
                   });
                   customLog(`divertResponse.status:${divertResponse.status}`);
@@ -575,6 +578,10 @@ class myDesktopSDK extends HTMLElement {
       customLog("removing meetingElement:");
       customLog(meetingElement);
       meetingElement.remove();
+
+      if(Object.keys(webexService.meetings.meetingCollection.meetings).length == 0){
+        window.shadowRoot.getElementById("no-meetings-label").style.display = "inherit";
+      }
     } catch(e){
       customLog("removeMeeting error:");
       customLog(e);

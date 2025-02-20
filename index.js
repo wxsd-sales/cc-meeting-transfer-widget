@@ -12,6 +12,7 @@ const port = process.env.PORT || 5000;
 //needed for CommonJS
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { error } from "console";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const __redirecturi = process.env.HOST_URI + "/auth";
@@ -21,8 +22,7 @@ const __redirecturi = process.env.HOST_URI + "/auth";
 app.use(express.static(__dirname + "/src"));
 
 app.get(`/login`, function(req, res, next){
-  console.log("Login token:");
-  console.log(req.query.token);
+  console.log("Login attempt.");
   let prevToken = cache.get(req.query.token);
   if(prevToken){
       console.log("prevToken exists, auth_done.");
@@ -30,12 +30,15 @@ app.get(`/login`, function(req, res, next){
   } else if(req.query.token && req.query.token.length >= 20){
     let redirectUri = `https://webexapis.com/v1/authorize?client_id=${process.env.CLIENT_ID}&response_type=code&`;
     redirectUri += `redirect_uri=${encodeURI(__redirecturi)}&state=${req.query.token}&`;
-    redirectUri += `scope=spark%3Acalls_write%20spark%3Akms%20spark%3Apeople_read%20spark%3Acalls_read%20spark%3Axsi`;
+    redirectUri += `scope=spark%3Acalls_write%20spark%3Akms%20spark%3Apeople_read%20spark%3Axsi%20spark%3Acalls_read`;
+    console.log(`redirectUri:${redirectUri}`);
     res.redirect(redirectUri);
   } else {
     res.setHeader('Content-Type',"application/json");
     res.statusCode = 400;
-    res.send(JSON.stringify({"error":"token parameter invalid or missing."}));
+    let errorMessage = "token parameter invalid or missing.";
+    console.log(errorMessage);
+    res.send(JSON.stringify({"error":errorMessage}));
   }
 })
 
@@ -55,6 +58,7 @@ app.get('/auth_done', function(req, res, next){
 
 app.get(`/auth`, async function(req, res, next) {
   console.log(`/auth redirectURI: ${__redirecturi}`);
+  console.log(`code:${req.query.code}`);
   let accessTokenResp = await fetch('https://webexapis.com/v1/access_token',{
       method: "POST",
       headers:{
@@ -70,6 +74,8 @@ app.get(`/auth`, async function(req, res, next) {
   });
   //console.log(accessTokenResp);
   let json = await accessTokenResp.json();
+  console.log('/access_token resp:');
+  console.log(json);
   console.log(`state:${req.query.state}`);
   if(req.query.state && req.query.state.length >= 20){
     cache.set(req.query.state, json, 120*1000);
