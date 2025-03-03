@@ -496,6 +496,9 @@ class myDesktopSDK extends HTMLElement {
                   } else {
                     this.updateResultSpan(`Transfer failed. Status: ${divertResponse.status}`, "red");
                   }
+                  let jDivertResp = await divertResponse.json();
+                  customLog('diverResponse body:');
+                  customLog(jDivertResp); 
                 }
                 
               } else {

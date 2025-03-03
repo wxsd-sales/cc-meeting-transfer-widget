@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 //needed for CommonJS
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { error } from "console";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const __redirecturi = process.env.HOST_URI + "/auth";
