@@ -469,7 +469,7 @@ class myDesktopSDK extends HTMLElement {
                   //      gone for a second when the Blindxfer on CC happens?
                   customLog(calls);
                   for(let call of calls.items){
-                    if(call.remoteParty.number.replace("+","") === remoteNumber){
+                    if(call.remoteParty.number.replace("+","") === remoteNumber || call.remoteParty.number.replace("+1","") === remoteNumber){
                       if(call.remoteParty.name){
                         admitNewMemberName = call.remoteParty.name;
                       } else {
