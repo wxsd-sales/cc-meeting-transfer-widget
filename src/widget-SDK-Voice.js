@@ -666,7 +666,16 @@ class myDesktopSDK extends HTMLElement {
       }
     }catch(e){
       customLog('connectedCallback error', e);
-      setTimeout( this.connectedCallback, 3000);
+      let self = this;
+      setTimeout( function(){
+        try{
+          customLog("Trying to reload...");
+          self.connectedCallback();
+        }catch(ex){
+          customLog("setTimeout connectedCallback attempt error:");
+          customLog(ex);
+        }
+      }, 3000);
     }
   }
 
