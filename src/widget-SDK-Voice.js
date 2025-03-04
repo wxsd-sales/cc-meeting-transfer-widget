@@ -435,10 +435,11 @@ class myDesktopSDK extends HTMLElement {
                   'Content-Type': 'application/json'
                 }
                 let matchedId;
-                let remoteNumber = interaction.callAssociatedDetails.ani;
+                let ani = interaction.callAssociatedDetails.ani;
+                let remoteNumber = ani;
                 if(interaction.contactDirection.type === "OUTBOUND"){
-                    remoteNumber = interaction.callAssociatedDetails.dn;
-                  }
+                  remoteNumber = interaction.callAssociatedDetails.dn;
+                }
                 remoteNumber = remoteNumber.replace("+","");
                 customLog(`remoteNumber:${remoteNumber}`);
                 //Transfer to ourself using CC SDK (CCSDK cannot xfer to SIP destination)
@@ -478,6 +479,20 @@ class myDesktopSDK extends HTMLElement {
                       matchedId = call.id;
                       customLog(`matched callId: ${call.id}`);
                       break;
+                    }
+                  }
+                  if(!matchedId){
+                    customLog(`No matched callId, trying with ani.`);
+                    for(let c of calls.items){
+                      if(c.remoteParty.callType !== "external"){
+                        customLog("Non-external callType:", c.remoteParty.callType)
+                        if(c.remoteParty.number === ani){
+                          customLog("Remote Number matches ANI");
+                          matchedId = c.id;
+                          customLog(`matched callId: ${matchedId}`);
+                          break;
+                        }
+                      }
                     }
                   }
                   //Divert the call from ourselves to the SIP address of the meeting using WxCalling API (which can xfer to SIP endpoint)
@@ -601,6 +616,7 @@ class myDesktopSDK extends HTMLElement {
 
   connectedCallback() {
     try{
+      customLog("connectedCallback")
       this.init();
       this.getAgentInfo();
       if(!loaded){
