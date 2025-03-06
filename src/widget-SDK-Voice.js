@@ -92,8 +92,8 @@ template.innerHTML = `
               <button class="button" id="authorize">Authorize</button>
             </div>
             <div id="transfer-content" style="display:none;">
-              <input id="manual-sip-radio" type="radio" name="meeting-radio" value="manual-sip">
-              <input class="" type="text" id="meetingSIP" onfocus="this.value=''" placeholder="SIP Address"></input><br>
+              <!--<input id="manual-sip-radio" type="radio" name="meeting-radio" value="manual-sip">
+              <input class="" type="text" id="meetingSIP" onfocus="this.value=''" placeholder="SIP Address"></input><br>-->
               <div id="meetings-select">
                 <p id="no-meetings-label">Searching for Webex Meetings...</p>
               </div>
