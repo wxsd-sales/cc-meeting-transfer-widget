@@ -511,11 +511,15 @@ class myDesktopSDK extends HTMLElement {
                   } else {
                     this.updateResultSpan(`Transfer failed. Status: ${divertResponse.status}`, "red");
                   }
-                  let jDivertResp = await divertResponse.json();
-                  customLog('diverResponse body:');
-                  customLog(jDivertResp); 
+                  try{
+                    let jDivertResp = await divertResponse.json();
+                    customLog('divertResponse body:');
+                    customLog(jDivertResp); 
+                  }catch(ex){
+                    customLog("Could not get divertBody json response:");
+                    customLog(ex);
+                  }
                 }
-                
               } else {
                 this.updateResultSpan("No current interaction.", "red");
               }
