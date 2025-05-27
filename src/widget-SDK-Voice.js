@@ -112,6 +112,23 @@ const logger = Desktop.logger.createLogger("cc-widget-logger");
 let admitNewMemberName;
 let lastCheckedMeeting;
 var resetTransferTimeout;
+var initResult = false;
+
+function addOrReplaceEventListener(element, eventName, newListener) {
+  // Check if an event listener with the same name already exists
+  const hasExistingListener = element.hasOwnProperty(`_${eventName}Listener`);
+
+  if (hasExistingListener) {
+    // Remove the existing listener
+    element.removeEventListener(eventName, element[`_${eventName}Listener`]);
+  }
+
+  // Add the new listener
+  element.addEventListener(eventName, newListener);
+
+  // Store the new listener for future replacement
+  element[`_${eventName}Listener`] = newListener;
+}
 
 function getMeetingName(meeting){
   let name = meeting.meetingInfo.topic;
@@ -176,29 +193,35 @@ function changeAgentState(idleCode){
     idleCode = "meeting";
   }
   let auxCode;
-  for(let code of window.ccDesktop.agentStateInfo.latestData.idleCodes){
-    if(code.name.toLowerCase().indexOf(idleCode) >= 0){
-      auxCode = code.id;
-      customLog(`found meeting auxCode: ${auxCode}`);
+  try{
+    for(let code of window.ccDesktop.agentStateInfo.latestData.idleCodes){
+      if(code.name.toLowerCase().indexOf(idleCode) >= 0){
+        auxCode = code.id;
+        customLog(`found meeting auxCode: ${auxCode}`);
+      }
     }
+    if(auxCode){
+      fetch('https://api.wxcc-us1.cisco.com/v1/agents/session/state', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${window.myAgentService.webex.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+                              state: 'Idle', 
+                              auxCodeId: auxCode, 
+                              lastStateChangeReason: 'Meeting Transfer', 
+                              agentId: atob(window.agentDetails.id).split("/").slice(-1)[0]
+                            })
+      });
+    } else {
+      customLog("Could not find a meeting auxCode");
+    }
+  }catch(e){
+    customLog("changeAgentState Error:");
+    customLog(e);
   }
-  if(auxCode){
-    fetch('https://api.wxcc-us1.cisco.com/v1/agents/session/state', {
-      method: 'PUT',
-      headers: {
-         'Authorization': `Bearer ${window.myAgentService.webex.accessToken}`,
-         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-                            state: 'Idle', 
-                            auxCodeId: auxCode, 
-                            lastStateChangeReason: 'Meeting Transfer', 
-                            agentId: atob(window.agentDetails.id).split("/").slice(-1)[0]
-                          })
-    });
-  } else {
-    customLog("Could not find a meeting auxCode");
-  }
+  
 }
 
 function radioChange(){
@@ -259,73 +282,98 @@ class myDesktopSDK extends HTMLElement {
   async init() {
     // Initiating desktop config
     // index.js
-
+      customLog("Running Desktop config.init();")
       Desktop.config.init();
       try{
         // ************************** Event listeners ************************** \\
 
         window.shadowRoot = this.shadowRoot;
+        customLog("window.shadowRoot set.");
+        customLog(window.shadowRoot);
+        customLog(this.shadowRoot);
 
-        this.shadowRoot.getElementById("meetingSIP").addEventListener("click", e => {
-          this.shadowRoot.getElementById('manual-sip-radio').checked = true;
-          lastCheckedMeeting = 'manual-sip';
-        });
-
-        this.shadowRoot.getElementById("manual-sip-radio").addEventListener('change', radioChange);
+        try{
+          addOrReplaceEventListener(this.shadowRoot.getElementById("meetingSIP"), 'click', e => {
+            this.shadowRoot.getElementById('manual-sip-radio').checked = true;
+            lastCheckedMeeting = 'manual-sip';
+          });
+        } catch(e){
+          customLog("Error: Listener not attached for meetingSIP element");
+          customLog(e);
+        }
+        
+        try{
+          addOrReplaceEventListener(this.shadowRoot.getElementById("manual-sip-radio"), 'change', radioChange);
+        } catch(e){
+          customLog("Error: Listener not attached for manual-sip-radio element");
+          customLog(e);
+        }
 
         // Transfer to SIP Meeting
-        this.shadowRoot.getElementById("transferToSIPMeeting").addEventListener("click", e => {
-          customLog(this.shadowRoot.getElementById("transferToSIPMeeting"))
-          this.shadowRoot.getElementById("transferToSIPMeeting").disabled = true;
-          let value = undefined;
-          try{
-            value = this.inputElement("meetingSIP").value
-          }catch(e){
-            console.error(e);
-          }
-          this.transferToSIPMeeting(value);
-        });
-
-
-        this.shadowRoot.getElementById("authorize").addEventListener("click", e => {
-          //this.shadowRoot.getElementById("authorize").disabled = true;
-          this.showLoadingIcon("Authorizing in new window.");
-          let loginUrl = `${process.env.HOST_URI}/login?token=${myAgentService.webex.accessToken}`;
-          customLog(`loginUrl:${loginUrl}`);
-          const loginWindow = window.open(loginUrl);
-          let complete = false;
-          const waitForWindowClosed = async () => {
-            customLog(loginWindow.closed);
-            if (loginWindow.closed) {
-              customLog('The login window has been closed.');
-              try {
-                let response = await fetch(`${process.env.HOST_URI}/poll_token?token=${myAgentService.webex.accessToken}`)
-                let json = await response.json();
-                customLog(json);
-                if(json.access_token){
-                  Cookies.set("access_token", json.access_token, { expires: 7 });
-                  this.showTransferDiv();
-                } else {
-                  this.showAuthorizeDiv("Authorization failed. Please try again.", "red");
-                }
-                complete = true;
-                //this.shadowRoot.getElementById("authorize").disabled = false;
-              } catch(e){
-                customLog(e);
-                if(!complete){
-                  this.showAuthorizeDiv("Authorization failed. Please try again.", "red");
-                }
-              }
-            } else {
-              setTimeout(waitForWindowClosed, 1000);
+        try{
+          addOrReplaceEventListener( this.shadowRoot.getElementById("transferToSIPMeeting"), 'click', e => {
+            customLog(this.shadowRoot.getElementById("transferToSIPMeeting"))
+            this.shadowRoot.getElementById("transferToSIPMeeting").disabled = true;
+            let value = undefined;
+            try{
+              value = this.inputElement("meetingSIP").value
+            }catch(e){
+              console.error(e);
             }
-          };
-          waitForWindowClosed()
+            this.transferToSIPMeeting(value);
+          });
+        } catch(e){
+          customLog("Error: Listener not attached for transferToSIPMeeting element");
+          customLog(e);
+        }
 
-        });
-  
+        try{
+          addOrReplaceEventListener( this.shadowRoot.getElementById("authorize"), 'click', e => {
+            //this.shadowRoot.getElementById("authorize").disabled = true;
+            customLog("Authorization button pressed");
+            this.showLoadingIcon("Authorizing in new window.");
+            let loginUrl = `${process.env.HOST_URI}/login?token=${myAgentService.webex.accessToken}`;
+            customLog(`loginUrl:${loginUrl}`);
+            const loginWindow = window.open(loginUrl);
+            let complete = false;
+            const waitForWindowClosed = async () => {
+              customLog(loginWindow.closed);
+              if (loginWindow.closed) {
+                customLog('The login window has been closed.');
+                try {
+                  let response = await fetch(`${process.env.HOST_URI}/poll_token?token=${myAgentService.webex.accessToken}`)
+                  let json = await response.json();
+                  customLog(json);
+                  if(json.access_token){
+                    Cookies.set("access_token", json.access_token, { expires: 7 });
+                    this.showTransferDiv();
+                  } else {
+                    this.showAuthorizeDiv("Authorization failed. Please try again.", "red");
+                  }
+                  complete = true;
+                  //this.shadowRoot.getElementById("authorize").disabled = false;
+                } catch(e){
+                  customLog(e);
+                  if(!complete){
+                    this.showAuthorizeDiv("Authorization failed. Please try again.", "red");
+                  }
+                }
+              } else {
+                setTimeout(waitForWindowClosed, 1000);
+              }
+            };
+            waitForWindowClosed()
+
+          });
+        } catch(e){
+          customLog("Error: Listener not attached for authorize element");
+          customLog(e);
+        }
+        customLog("Initialized Buttons.")
+        initResult = true;
       } catch (e){
         customLog("init Error:", e);
+        initResult = false;
       }
   }
 
@@ -618,10 +666,15 @@ class myDesktopSDK extends HTMLElement {
     }
   }
 
-  connectedCallback() {
+  async connectedCallback() {
     try{
       customLog("connectedCallback")
-      this.init();
+      await this.init();
+      customLog("initResult:");
+      customLog(initResult);
+      if(!initResult){
+        throw new Error("Not initialized!");
+      }
       this.getAgentInfo();
       if(!loaded){
 
@@ -671,10 +724,10 @@ class myDesktopSDK extends HTMLElement {
     }catch(e){
       customLog('connectedCallback error', e);
       let self = this;
-      setTimeout( function(){
+      setTimeout(async function(){
         try{
           customLog("Trying to reload...");
-          self.connectedCallback();
+          await self.connectedCallback();
         }catch(ex){
           customLog("setTimeout connectedCallback attempt error:");
           customLog(ex);
